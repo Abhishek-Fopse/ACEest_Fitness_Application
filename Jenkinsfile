@@ -44,15 +44,26 @@ pipeline {
                 '''
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build \
+                        -t aceest-fitness:${BUILD_NUMBER} \
+                        -t aceest-fitness:latest \
+                        .
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'ACEest Fitness build and tests passed.'
+            echo 'ACEest Fitness tests passed and Docker image built successfully.'
         }
 
         failure {
-            echo 'ACEest Fitness pipeline failed. Review the stage logs.'
+            echo 'Pipeline failed. Review the stage logs.'
         }
 
         always {
