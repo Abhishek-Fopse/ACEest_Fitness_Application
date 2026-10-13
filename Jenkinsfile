@@ -25,23 +25,38 @@ pipeline {
                     python3 -m venv .venv
                     .venv/bin/python -m pip install --upgrade pip
                     .venv/bin/python -m pip install -r requirements.txt
+                    .venv/bin/python -m pip install ruff
                 '''
             }
         }
 
         stage('Syntax Check') {
             steps {
-                sh '''
-                    .venv/bin/python -m compileall -q app.py
-                '''
+                sh '.venv/bin/python -m compileall -q app.py tests'
+            }
+        }
+
+        stage('Run Ruff') {
+            steps {
+                sh '.venv/bin/ruff check app.py tests'
             }
         }
 
         stage('Run Pytest') {
             steps {
-                sh '''
-                    .venv/bin/python -m pytest -v
-                '''
+                sh '.venv/bin/python -m pytest -v'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.projectKey=aceest-fitness \
+                          -Dsonar.projectName="ACEest Fitness Application"
+                    '''
+                }
             }
         }
 
@@ -49,9 +64,9 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                        -t aceest-fitness:${BUILD_NUMBER} \
-                        -t aceest-fitness:latest \
-                        .
+                      -t aceest-fitness:${BUILD_NUMBER} \
+                      -t aceest-fitness:latest \
+                      .
                 '''
             }
         }
@@ -59,13 +74,11 @@ pipeline {
 
     post {
         success {
-            echo 'ACEest Fitness tests passed and Docker image built successfully.'
+            echo 'ACEest Fitness checks passed, SonarQube analysis completed, and Docker image built.'
         }
-
         failure {
             echo 'Pipeline failed. Review the stage logs.'
         }
-
         always {
             echo 'Jenkins pipeline execution completed.'
         }
