@@ -50,12 +50,16 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.projectKey=aceest-fitness \
-                          -Dsonar.projectName="ACEest Fitness Application"
-                    '''
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            "${scannerHome}/bin/sonar-scanner" \
+                              -Dsonar.projectKey=aceest-fitness \
+                              -Dsonar.projectName="ACEest Fitness Application"
+                        """
+                    }
                 }
             }
         }
@@ -76,9 +80,11 @@ pipeline {
         success {
             echo 'ACEest Fitness checks passed, SonarQube analysis completed, and Docker image built.'
         }
+
         failure {
             echo 'Pipeline failed. Review the stage logs.'
         }
+
         always {
             echo 'Jenkins pipeline execution completed.'
         }
