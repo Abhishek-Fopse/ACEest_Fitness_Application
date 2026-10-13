@@ -1,8 +1,18 @@
-from datetime import date, datetime
 import os
 import random
 import sqlite3
-from flask import Flask, g, redirect, render_template_string, request, url_for, flash, abort
+from datetime import date, datetime
+
+from flask import (
+    Flask,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template_string,
+    request,
+    url_for,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-this-development-key")
@@ -308,7 +318,7 @@ def client_detail(client_id):
 
 @app.route("/clients/<int:client_id>/program", methods=["POST"])
 def generate_program(client_id):
-    client = get_client_or_404(client_id)
+    get_client_or_404(client_id)
     goal = request.form.get("program_type", "Beginner")
     if goal not in PROGRAM_TEMPLATES:
         flash("Please select a valid program goal.")
