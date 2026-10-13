@@ -20,27 +20,27 @@ pipeline {
 
         stage('Setup Python Environment') {
             steps {
-                bat '''
-                    python --version
-                    python -m venv .venv
-                    .venv\\Scripts\\python.exe -m pip install --upgrade pip
-                    .venv\\Scripts\\python.exe -m pip install -r requirements.txt
+                sh '''
+                    python3 --version
+                    python3 -m venv .venv
+                    .venv/bin/python -m pip install --upgrade pip
+                    .venv/bin/python -m pip install -r requirements.txt
                 '''
             }
         }
 
         stage('Syntax Check') {
             steps {
-                bat '''
-                    .venv\\Scripts\\python.exe -m compileall -q app.py
+                sh '''
+                    .venv/bin/python -m compileall -q app.py
                 '''
             }
         }
 
         stage('Run Pytest') {
             steps {
-                bat '''
-                    .venv\\Scripts\\python.exe -m pytest -v
+                sh '''
+                    .venv/bin/python -m pytest -v
                 '''
             }
         }
