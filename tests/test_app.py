@@ -219,3 +219,9 @@ def test_health_endpoint_database_failure(client, monkeypatch):
         "status": "error",
         "database": "unavailable",
     }
+
+def test_live_endpoint(client):
+    response = client.get("/live")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "alive"}

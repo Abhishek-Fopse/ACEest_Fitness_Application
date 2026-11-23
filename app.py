@@ -371,6 +371,12 @@ def membership_check(client_id):
     flash(f"Membership status: {client['membership_status']}. Renewal date: {end}.")
     return redirect(url_for("client_detail", client_id=client_id))
 
+@app.route("/live")
+def live():
+    """Report whether the application process is responding."""
+    return {"status": "alive"}, 200
+
+
 @app.route("/health")
 def health():
     """Report application and database readiness."""

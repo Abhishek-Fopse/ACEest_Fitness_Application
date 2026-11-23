@@ -36,9 +36,9 @@ FROM base AS production
 
 COPY app.py .
 
-RUN groupadd --system appuser \
-    && useradd --system --gid appuser --create-home appuser \
-    && chown -R appuser:appuser /app
+RUN groupadd --system --gid 10001 appuser \
+    && useradd --system --uid 10001 --gid 10001 --create-home appuser \
+    && chown -R 10001:10001 /app
 
 USER appuser
 
