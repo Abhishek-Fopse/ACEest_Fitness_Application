@@ -44,7 +44,11 @@ pipeline {
 
         stage('Run Pytest') {
             steps {
-                sh '.venv/bin/python -m pytest -v'
+                sh '''
+                    mkdir -p reports
+                    .venv/bin/python -m pytest -v \
+                        --junitxml=reports/pytest-results.xml
+                '''
             }
         }
 
@@ -92,14 +96,24 @@ pipeline {
 
     post {
         success {
-            echo 'ACEest Fitness checks passed, SonarQube analysis completed, quality gate passed, and Docker image built.'
+            echo 'ACEest Fitness checks passed, SonarQube quality gate passed, and Docker image built.'
         }
 
         failure {
-            echo 'Pipeline failed. Review the stage logs and SonarQube quality gate results.'
+            echo 'Pipeline failed. Review the stage logs, test reports, and SonarQube results.'
         }
 
         always {
+            junit(
+                testResults: 'reports/pytest-results.xml',
+                allowEmptyResults: true
+            )
+
+            archiveArtifacts(
+                artifacts: 'reports/**',
+                allowEmptyArchive: true
+            )
+
             echo 'Jenkins pipeline execution completed.'
         }
     }
