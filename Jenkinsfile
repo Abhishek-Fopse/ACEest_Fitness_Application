@@ -90,22 +90,57 @@ pipeline {
             }
         }
 
-        stage('Build Production Docker Image') {
+        stage('Build and Publish Docker Image') {
             steps {
-                sh '''
-                    docker build \
-                        --target production \
-                        -t aceest-fitness:${BUILD_NUMBER} \
-                        -t aceest-fitness:latest \
-                        .
-                '''
+                script {
+                    def imageName = 'abhishekfopse/aceest-fitness'
+                    def buildTag = env.BUILD_NUMBER
+                    def shortCommit = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKERHUB_USERNAME',
+                            passwordVariable: 'DOCKERHUB_TOKEN'
+                        )
+                    ]) {
+                        sh """
+                            set -eu
+
+                            trap 'docker logout >/dev/null 2>&1 || true' EXIT
+
+                            echo "\$DOCKERHUB_TOKEN" | docker login \
+                                --username "\$DOCKERHUB_USERNAME" \
+                                --password-stdin
+
+                            docker build \
+                                --target production \
+                                -t ${imageName}:${buildTag} \
+                                -t ${imageName}:${shortCommit} \
+                                -t ${imageName}:latest \
+                                .
+
+                            docker push ${imageName}:${buildTag}
+                            docker push ${imageName}:${shortCommit}
+                            docker push ${imageName}:latest
+                        """
+                    }
+
+                    echo "Published Docker images to ${imageName}"
+                    echo "Build tag: ${buildTag}"
+                    echo "Commit tag: ${shortCommit}"
+                    echo "Latest tag: latest"
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'ACEest Fitness validation passed, containerized tests completed, SonarQube quality gate passed, and production Docker image built.'
+            echo 'ACEest Fitness validation passed, containerized tests completed, SonarQube quality gate passed, and Docker images published successfully.'
         }
 
         failure {
