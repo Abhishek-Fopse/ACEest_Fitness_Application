@@ -196,3 +196,26 @@ def test_unknown_client_returns_404(client):
 
     assert response.status_code == 404
     assert b"Not found" in response.data
+
+def test_version_endpoint(client):
+    response = client.get("/version")
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "application": app_module.APP_NAME,
+        "version": app_module.APP_VERSION,
+    }
+
+def test_health_endpoint_database_failure(client, monkeypatch):
+    def raise_database_error():
+        raise sqlite3.OperationalError("Database unavailable")
+
+    monkeypatch.setattr(app_module, "get_db", raise_database_error)
+
+    response = client.get("/health")
+
+    assert response.status_code == 503
+    assert response.get_json() == {
+        "status": "error",
+        "database": "unavailable",
+    }
