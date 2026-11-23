@@ -42,12 +42,20 @@ pipeline {
             }
         }
 
-        stage('Run Pytest') {
+        stage('Containerized Pytest') {
             steps {
                 sh '''
                     mkdir -p reports
-                    .venv/bin/python -m pytest -v \
-                        --junitxml=reports/pytest-results.xml
+                    rm -f reports/pytest-results.xml
+
+                    docker build \
+                        --target test \
+                        -t aceest-fitness-test:${BUILD_NUMBER} \
+                        .
+
+                    docker run --rm \
+                        -v "$WORKSPACE/reports:/app/reports" \
+                        aceest-fitness-test:${BUILD_NUMBER}
                 '''
             }
         }
@@ -82,13 +90,14 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Production Docker Image') {
             steps {
                 sh '''
                     docker build \
-                      -t aceest-fitness:${BUILD_NUMBER} \
-                      -t aceest-fitness:latest \
-                      .
+                        --target production \
+                        -t aceest-fitness:${BUILD_NUMBER} \
+                        -t aceest-fitness:latest \
+                        .
                 '''
             }
         }
@@ -96,11 +105,11 @@ pipeline {
 
     post {
         success {
-            echo 'ACEest Fitness checks passed, SonarQube quality gate passed, and Docker image built.'
+            echo 'ACEest Fitness validation passed, containerized tests completed, SonarQube quality gate passed, and production Docker image built.'
         }
 
         failure {
-            echo 'Pipeline failed. Review the stage logs, test reports, and SonarQube results.'
+            echo 'Pipeline failed. Review the stage logs, containerized test reports, and SonarQube results.'
         }
 
         always {

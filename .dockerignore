@@ -10,3 +10,4 @@ __pycache__/
 aceest_fitness.db
 *.db
 evidence/
+reports/
