@@ -15,8 +15,18 @@ from flask import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-this-development-key")
-DB_PATH = os.environ.get("ACEEST_DB_PATH", os.path.join(os.path.dirname(__file__), "aceest_fitness.db"))
+
+APP_NAME = "ACEest Fitness"
+APP_VERSION = os.environ.get("ACEEST_APP_VERSION", "1.0.0")
+
+app.secret_key = os.environ.get(
+    "FLASK_SECRET_KEY",
+    "change-this-development-key",
+)
+DB_PATH = os.environ.get(
+    "ACEEST_DB_PATH",
+    os.path.join(os.path.dirname(__file__), "aceest_fitness.db"),
+)
 
 PROGRAM_TEMPLATES = {
     "Fat Loss": ["Full Body HIIT", "Circuit Training", "Cardio + Weights"],
@@ -363,7 +373,28 @@ def membership_check(client_id):
 
 @app.route("/health")
 def health():
-    return {"status": "ok"}, 200
+    """Report application and database readiness."""
+    try:
+        get_db().execute("SELECT 1").fetchone()
+        return {
+            "status": "ok",
+            "database": "connected",
+        }, 200
+    except sqlite3.Error:
+        app.logger.exception("Database health check failed")
+        return {
+            "status": "error",
+            "database": "unavailable",
+        }, 503
+
+
+@app.route("/version")
+def version():
+    """Return the application name and deployed version."""
+    return {
+        "application": APP_NAME,
+        "version": APP_VERSION,
+    }, 200
 
 @app.errorhandler(404)
 def not_found(_error):
