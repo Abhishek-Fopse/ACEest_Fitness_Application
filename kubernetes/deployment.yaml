@@ -1,19 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aceest-fitness
+  name: aceest-fitness-blue
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
+    deployment-color: blue
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: aceest-fitness
+      deployment-color: blue
   template:
     metadata:
       labels:
         app: aceest-fitness
+        deployment-color: blue
     spec:
       securityContext:
         runAsNonRoot: true

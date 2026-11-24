@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+STATE="${MOCK_STATE_DIR:?MOCK_STATE_DIR is required}"
+LOG="$STATE/commands.log"
+
+printf '%s\n' "$*" >> "$LOG"
+
+get_color_from_args() {
+    local value="$*"
+    if [[ "$value" =~ deployment-color=(blue|green) ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi
+}
+
+case "${1:-}" in
+    get)
+        case "${2:-}" in
+            namespace|service)
+                if [[ "$2" == "service" && "$*" == *"spec.selector.deployment-color"* ]]; then
+                    cat "$STATE/service-color"
+                fi
+                exit 0
+                ;;
+            deployment)
+                deployment="${3:-}"
+                if [[ "$*" == *"spec.template.spec.containers"* ]]; then
+                    cat "$STATE/${deployment}.image" 2>/dev/null || echo "abhishekfopse/aceest-fitness:latest"
+                fi
+                exit 0
+                ;;
+            pods)
+                color="$(get_color_from_args "$*")"
+                [[ -n "$color" ]] || color="blue"
+
+                if [[ "$*" == *"-o name"* ]]; then
+                    echo "pod/${color}-pod"
+                else
+                    echo "${color}-pod"
+                fi
+                exit 0
+                ;;
+            endpoints)
+                color="$(cat "$STATE/service-color")"
+                case ",${MOCK_ENDPOINT_FAIL_COLOR:-}," in
+                    *,"$color",*) exit 0 ;;
+                esac
+                echo "${color}-pod"
+                exit 0
+                ;;
+        esac
+        ;;
+
+    rollout)
+        deployment="${3:-}"
+        color="${deployment##*-}"
+        case ",${MOCK_ROLLOUT_FAIL_COLOR:-}," in
+            *,"$color",*) exit 1 ;;
+        esac
+        exit 0
+        ;;
+
+    wait)
+        color="$(get_color_from_args "$*")"
+        if [[ "$*" == *"condition=Ready"* ]]; then
+            case ",${MOCK_READY_FAIL_COLOR:-}," in
+                *,"$color",*) exit 1 ;;
+            esac
+        fi
+        exit 0
+        ;;
+
+    scale)
+        exit 0
+        ;;
+
+    set)
+        if [[ "${2:-}" == "image" ]]; then
+            deployment="${3#deployment/}"
+            image="${4#*=}"
+            printf '%s' "$image" > "$STATE/${deployment}.image"
+        fi
+        exit 0
+        ;;
+
+    exec)
+        pod="${2:-}"
+        color="${pod%-pod}"
+        case ",${MOCK_HEALTH_FAIL_COLOR:-}," in
+            *,"$color",*) echo "Mock application health failure" >&2; exit 1 ;;
+        esac
+        echo '{"status":"ok","database":"connected"}'
+        exit 0
+        ;;
+
+    patch)
+        payload="${*: -1}"
+        if [[ "$payload" =~ deployment-color\":\"(blue|green)\" ]]; then
+            printf '%s' "${BASH_REMATCH[1]}" > "$STATE/service-color"
+        else
+            echo "Mock could not parse Service selector" >&2
+            exit 1
+        fi
+        exit 0
+        ;;
+
+    *)
+        echo "Unsupported mock kubectl command: $*" >&2
+        exit 1
+        ;;
+esac
+
+echo "Mock kubectl: unhandled command: $*" >&2
+exit 1

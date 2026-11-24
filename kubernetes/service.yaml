@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: aceest-fitness-service
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
 spec:
   type: ClusterIP
   selector:
     app: aceest-fitness
+    deployment-color: blue
   ports:
     - name: http
       port: 80
