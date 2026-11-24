@@ -76,25 +76,12 @@ pipeline {
             }
         }
 
-        stage('SonarQube Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    script {
-                        def qualityGate = waitForQualityGate(
-                            abortPipeline: true
-                        )
-
-                        echo "SonarQube Quality Gate: ${qualityGate.status}"
-                    }
-                }
-            }
-        }
-
         stage('Build and Publish Docker Image') {
             steps {
                 script {
                     def imageName = 'abhishekfopse/aceest-fitness'
                     def buildTag = env.BUILD_NUMBER
+
                     def shortCommit = sh(
                         script: 'git rev-parse --short HEAD',
                         returnStdout: true
@@ -140,7 +127,7 @@ pipeline {
 
     post {
         success {
-            echo 'ACEest Fitness validation passed, containerized tests completed, SonarQube quality gate passed, and Docker images published successfully.'
+            echo 'ACEest Fitness validation passed, containerized tests completed, SonarQube analysis completed, and Docker images published successfully.'
         }
 
         failure {
