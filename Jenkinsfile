@@ -21,8 +21,8 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 sh '''
-                    python3 --version
-                    python3 -m venv .venv
+                    python3.12 --version
+                    python3.12 -m venv .venv
                     .venv/bin/python -m pip install --upgrade pip
                     .venv/bin/python -m pip install -r requirements.txt
                     .venv/bin/python -m pip install ruff
